@@ -1,0 +1,576 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { initializeApp } from 'firebase/app';
+import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'firebase/auth';
+import { getFirestore, collection, doc, setDoc, onSnapshot } from 'firebase/firestore';
+
+// Declare XLSX globally for direct use, assuming it's loaded via a script tag
+declare global {
+  interface Window {
+    XLSX: any;
+    pdfjsLib: any; // Declare pdfjsLib
+  }
+}
+
+// Assume __app_id, __firebase_config, __initial_auth_token are globally available
+declare const __app_id: string;
+declare const __firebase_config: string;
+declare const __initial_auth_token: string;
+
+// Define document types
+type DocumentType = 'egyptianId' | 'passport';
+
+function App() {
+  const [documentType, setDocumentType] = useState<DocumentType | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [allExtractedData, setAllExtractedData] = useState<any[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+  const [db, setDb] = useState<any>(null);
+  const [auth, setAuth] = useState<any>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [isAuthReady, setIsAuthReady] = useState<boolean>(false);
+  const [processedFilesCount, setProcessedFilesCount] = useState<number>(0);
+  const [totalFilesToProcess, setTotalFilesToProcess] = useState<number>(0);
+
+  // Ref for a hidden canvas element for PDF rendering
+  const pdfCanvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    // Dynamically load XLSX library
+    const xlsxScript = document.createElement('script');
+    xlsxScript.src = 'https://unpkg.com/xlsx/dist/xlsx.full.min.js';
+    xlsxScript.async = true;
+    document.body.appendChild(xlsxScript);
+
+    // Dynamically load PDF.js library
+    const pdfJsScript = document.createElement('script');
+    pdfJsScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js';
+    pdfJsScript.async = true;
+    document.body.appendChild(pdfJsScript);
+
+    // Set PDF.js worker source once pdf.js is loaded
+    pdfJsScript.onload = () => {
+      if (window.pdfjsLib) {
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+      }
+    };
+
+    // Firebase Initialization and Authentication
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+    const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+
+    let app: any;
+    let firestore: any;
+    let firebaseAuth: any;
+
+    try {
+      app = initializeApp(firebaseConfig);
+      firestore = getFirestore(app);
+      firebaseAuth = getAuth(app);
+
+      setDb(firestore);
+      setAuth(firebaseAuth);
+
+      const unsubscribe = onAuthStateChanged(firebaseAuth, async (user) => {
+        if (user) {
+          setUserId(user.uid);
+          console.log("User authenticated:", user.uid);
+        } else {
+          try {
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+              await signInWithCustomToken(firebaseAuth, __initial_auth_token);
+              console.log("Attempted custom token sign-in.");
+            } else {
+              await signInAnonymously(firebaseAuth);
+              console.log("Attempted anonymous sign-in as no custom token provided/applicable.");
+            }
+          } catch (e: any) {
+            console.error("Firebase authentication attempt failed:", e);
+            if ((e.code === 'auth/invalid-custom-token' || e.code === 'auth/invalid-claims') && !firebaseAuth.currentUser) {
+                console.warn("Custom token invalid/expired or claims invalid, attempting anonymous fallback.");
+                try {
+                    await signInAnonymously(firebaseAuth);
+                    console.log("Successfully signed in anonymously after custom token failure.");
+                } catch (anonErr: any) {
+                    console.error("Anonymous sign-in also failed:", anonErr);
+                    setError("Failed to authenticate with Firebase. Please check console for details.");
+                }
+            } else if (!firebaseAuth.currentUser) {
+                setError("Failed to authenticate with Firebase. Please check console for details.");
+            }
+          }
+        }
+        setIsAuthReady(true);
+      });
+
+      return () => {
+        unsubscribe();
+        document.body.removeChild(xlsxScript);
+        document.body.removeChild(pdfJsScript);
+      };
+    } catch (e) {
+      console.error("Firebase setup error (initialization):", e);
+      setError("Failed to initialize Firebase.");
+      setIsAuthReady(true);
+    }
+  }, []);
+
+  // Example Firestore listener (for boilerplate, not core to ID extraction data storage)
+  useEffect(() => {
+    if (db && userId && isAuthReady) {
+      const userDocRef = doc(collection(db, `artifacts/${typeof __app_id !== 'undefined' ? __app_id : 'default-app-id'}/users/${userId}/app_data`), 'example_data');
+      const unsubscribe = onSnapshot(userDocRef, (docSnap) => {
+        if (docSnap.exists()) {
+          console.log("Current example data:", docSnap.data());
+        } else {
+          console.log("No example data yet!");
+        }
+      }, (err) => {
+        console.error("Firestore snapshot error:", err);
+        setError("Failed to listen to example data.");
+      });
+      return () => unsubscribe();
+    }
+  }, [db, userId, isAuthReady]);
+
+  const handleFolderChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (files && files.length > 0) {
+      // Filter for image and PDF files
+      const allowedFiles = Array.from(files).filter(file =>
+        file.type.startsWith('image/') || file.type === 'application/pdf'
+      );
+      setSelectedFiles(allowedFiles);
+      setTotalFilesToProcess(allowedFiles.length);
+      setProcessedFilesCount(0);
+      setAllExtractedData([]);
+      setError(null);
+      if (allowedFiles.length > 0) {
+        processFiles(allowedFiles); // Start extraction automatically
+      }
+    } else {
+      setSelectedFiles([]);
+      setTotalFilesToProcess(0);
+      setProcessedFilesCount(0);
+      setAllExtractedData([]);
+      setError(null);
+    }
+  };
+
+  // Helper function to convert File to Base64 image data suitable for Gemini
+  const fileToGeminiCompatibleBase64 = async (file: File): Promise<string> => {
+    return new Promise(async (resolve, reject) => {
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      } else if (file.type === 'application/pdf') {
+        if (!window.pdfjsLib) {
+          return reject(new Error("PDF.js library not loaded. Cannot process PDF."));
+        }
+        try {
+          const arrayBuffer = await file.arrayBuffer();
+          const pdf = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+          const page = await pdf.getPage(1); // Get the first page
+
+          const viewport = page.getViewport({ scale: 2.0 }); // Scale for better quality
+          const canvas = pdfCanvasRef.current;
+          if (!canvas) {
+              return reject(new Error("Hidden canvas element not available for PDF rendering."));
+          }
+          const context = canvas.getContext('2d');
+          if (!context) {
+            return reject(new Error("Could not get 2D canvas context for PDF rendering."));
+          }
+          canvas.height = viewport.height;
+          canvas.width = viewport.width;
+
+          await page.render({ canvasContext: context, viewport: viewport }).promise;
+          resolve(canvas.toDataURL('image/jpeg').split(',')[1]); // Convert to JPEG base64
+        } catch (pdfError: any) {
+          reject(new Error(`Error processing PDF file ${file.name}: ${pdfError.message || 'Unknown PDF error'}`));
+        }
+      } else {
+        reject(new Error(`Unsupported file type: ${file.type} for file ${file.name}`));
+      }
+    });
+  };
+
+  const getPromptAndSchema = (type: DocumentType) => {
+    if (type === 'egyptianId') {
+      return {
+        prompt: `
+          You are an OCR and data extraction expert. Extract the following information from the Egyptian National ID card image:
+          - Full Name (اسم كامل):
+          - National ID Number (الرقم القومي):
+          - Date of Birth (تاريخ الميلاد): (Format: DD/MM/YYYY)
+          - Address (العنوان):
+          - ID Issued Date (تاريخ الاصدار): (Format: MM/YYYY - Month and Year only)
+          - ID Expiry Date (تاريخ الانتهاء): (Format: DD/MM/YYYY)
+
+          If a field is not clearly visible or present, state "Not Found".
+          Please provide the output in a structured JSON format with keys as English labels:
+          {
+            "fullName": "...",
+            "nationalId": "...",
+            "dateOfBirth": "...",
+            "address": "...",
+            "idIssuedDate": "...",
+            "idExpiryDate": "..."
+          }
+        `,
+        schema: {
+          type: "OBJECT",
+          properties: {
+            "fullName": { "type": "STRING" },
+            "nationalId": { "type": "STRING" },
+            "dateOfBirth": { "type": "STRING" },
+            "address": { "type": "STRING" },
+            "idIssuedDate": { "type": "STRING" },
+            "idExpiryDate": { "type": "STRING" }
+          },
+          "propertyOrdering": ["fullName", "nationalId", "dateOfBirth", "address", "idIssuedDate", "idExpiryDate"]
+        }
+      };
+    } else { // passport
+      return {
+        prompt: `
+          You are an OCR and data extraction expert. Extract the following information from the Passport image:
+          - Full Name:
+          - Passport Number:
+          - Nationality (الجنسية):
+          - Date of Birth: (Format: DD/MM/YYYY)
+          - Date of Issue: (Format: DD/MM/YYYY)
+          - Date of Expiry: (Format: DD/MM/YYYY)
+
+          If a field is not clearly visible or present, state "Not Found".
+          Please provide the output in a structured JSON format with keys as English labels:
+          {
+            "fullName": "...",
+            "passportNumber": "...",
+            "nationality": "...",
+            "dateOfBirth": "...",
+            "dateOfIssue": "...",
+            "dateOfExpiry": "..."
+          }
+        `,
+        schema: {
+          type: "OBJECT",
+          properties: {
+            "fullName": { "type": "STRING" },
+            "passportNumber": { "type": "STRING" },
+            "nationality": { "type": "STRING" },
+            "dateOfBirth": { "type": "STRING" },
+            "dateOfIssue": { "type": "STRING" },
+            "dateOfExpiry": { "type": "STRING" }
+          },
+          "propertyOrdering": ["fullName", "passportNumber", "nationality", "dateOfBirth", "dateOfIssue", "dateOfExpiry"]
+        }
+      };
+    }
+  };
+
+  const extractSingleDocumentData = async (base64ImageData: string, filename: string, type: DocumentType) => {
+    const { prompt, schema } = getPromptAndSchema(type);
+
+    const chatHistory = [];
+    chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+    const payload = {
+      contents: [
+        {
+          role: "user",
+          parts: [
+            { text: prompt },
+            {
+              inlineData: {
+                mimeType: "image/jpeg", // Assuming JPEG for all inputs after conversion
+                data: base64ImageData
+              }
+            }
+          ]
+        }
+      ],
+      generationConfig: {
+        responseMimeType: "application/json",
+        responseSchema: schema
+      }
+    };
+
+    const apiKey = ""; // Canvas will automatically provide this
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+    try {
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`API error: ${response.status} - ${errorText}`);
+      }
+
+      const result = await response.json();
+
+      if (result.candidates && result.candidates.length > 0 &&
+        result.candidates[0].content && result.candidates[0].content.parts &&
+        result.candidates[0].content.parts.length > 0) {
+        const jsonString = result.candidates[0].content.parts[0].text;
+        const parsedJson = JSON.parse(jsonString);
+        return { ...parsedJson, filename, documentType: type }; // Add filename and type for context
+      } else {
+        console.warn(`No data extracted for ${filename}.`);
+        return { filename, documentType: type, error: "No data extracted" };
+      }
+    } catch (err: any) {
+      console.error(`Error extracting data for ${filename}:`, err);
+      return { filename, documentType: type, error: `Failed to extract data: ${err.message || 'Unknown error'}` };
+    }
+  };
+
+  const processFiles = async (files: File[]) => {
+    if (!documentType) {
+      setError("Please select a document type first.");
+      return;
+    }
+
+    setLoading(true);
+    setAllExtractedData([]);
+    setProcessedFilesCount(0);
+    setError(null);
+
+    const results: any[] = [];
+    for (const file of files) {
+      try {
+        const base64ImageData = await fileToGeminiCompatibleBase64(file);
+        const extracted = await extractSingleDocumentData(base64ImageData, file.name, documentType);
+        results.push(extracted);
+        setAllExtractedData([...results]);
+      } catch (e: any) {
+        console.error(`Failed to process file ${file.name}:`, e);
+        results.push({ filename: file.name, documentType: documentType, error: `Processing failed: ${e.message || 'Unknown error'}` });
+        setAllExtractedData([...results]);
+      }
+      setProcessedFilesCount(prev => prev + 1);
+    }
+
+    setLoading(false);
+
+    if (results.length > 0 && window.XLSX) {
+      generateExcel(results);
+    } else if (!window.XLSX) {
+      setError("XLSX library not loaded. Cannot generate Excel file.");
+    }
+  };
+
+  const generateExcel = (data: any[]) => {
+    if (!window.XLSX) {
+      setError("XLSX library is not available. Please try again or refresh.");
+      return;
+    }
+
+    const egyptianIdData = data.filter(item => item.documentType === 'egyptianId');
+    const passportData = data.filter(item => item.documentType === 'passport');
+
+    const wb = window.XLSX.utils.book_new();
+
+    // Egyptian ID Sheet
+    if (egyptianIdData.length > 0) {
+      const egyptianIdHeaders = [
+        "filename", "fullName", "nationalId", "dateOfBirth", "address",
+        "idIssuedDate", "idExpiryDate", "error"
+      ];
+      // Map data to ensure all defined headers are present, filling missing with "N/A"
+      const formattedEgyptianIdData = egyptianIdData.map(item => {
+        const newItem: { [key: string]: any } = {};
+        egyptianIdHeaders.forEach(header => {
+          newItem[header] = item[header] !== undefined ? item[header] : "N/A";
+        });
+        return newItem;
+      });
+      const wsEgyptianId = window.XLSX.utils.json_to_sheet(formattedEgyptianIdData, { header: egyptianIdHeaders });
+      window.XLSX.utils.book_append_sheet(wb, wsEgyptianId, "Egyptian IDs");
+    }
+
+    // Passport Sheet
+    if (passportData.length > 0) {
+      const passportHeaders = [
+        "filename", "fullName", "passportNumber", "nationality", "dateOfBirth",
+        "dateOfIssue", "dateOfExpiry", "error"
+      ];
+      // Map data to ensure all defined headers are present, filling missing with "N/A"
+      const formattedPassportData = passportData.map(item => {
+        const newItem: { [key: string]: any } = {};
+        passportHeaders.forEach(header => {
+          newItem[header] = item[header] !== undefined ? item[header] : "N/A";
+        });
+        return newItem;
+      });
+      const wsPassport = window.XLSX.utils.json_to_sheet(formattedPassportData, { header: passportHeaders });
+      window.XLSX.utils.book_append_sheet(wb, wsPassport, "Passports");
+    }
+
+    const excelFileName = "extracted_data.xlsx";
+    window.XLSX.writeFile(wb, excelFileName);
+    console.log(`Excel file "${excelFileName}" generated and downloaded.`);
+  };
+
+  const handleDocumentTypeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setDocumentType(event.target.value as DocumentType);
+    // Reset state when document type changes
+    setSelectedFiles([]);
+    setAllExtractedData([]);
+    setLoading(false);
+    setError(null);
+    setProcessedFilesCount(0);
+    setTotalFilesToProcess(0);
+  };
+
+  if (!documentType) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 flex items-center justify-center p-4 font-sans">
+        {userId && (
+          <div className="absolute top-4 left-4 bg-gray-700 text-gray-300 text-xs px-3 py-1 rounded-full shadow-sm">
+            User ID: {userId}
+          </div>
+        )}
+        <div className="bg-gray-800 rounded-xl shadow-2xl p-8 max-w-sm w-full text-center">
+          <h1 className="text-2xl font-extrabold text-white mb-6">
+            Choose Document Type
+          </h1>
+          <div className="flex flex-col space-y-4">
+            <label className="inline-flex items-center justify-center bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-lg cursor-pointer transition-colors duration-200">
+              <input
+                type="radio"
+                name="documentType"
+                value="egyptianId"
+                onChange={handleDocumentTypeChange}
+                className="form-radio h-5 w-5 text-blue-500 bg-gray-900 border-gray-600 focus:ring-blue-500 mr-3"
+              />
+              Egyptian National ID
+            </label>
+            <label className="inline-flex items-center justify-center bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-lg cursor-pointer transition-colors duration-200">
+              <input
+                type="radio"
+                name="documentType"
+                value="passport"
+                onChange={handleDocumentTypeChange}
+                className="form-radio h-5 w-5 text-blue-500 bg-gray-900 border-gray-600 focus:ring-blue-500 mr-3"
+              />
+              Passport
+            </label>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 flex items-center justify-center p-4 font-sans">
+      {/* Hidden canvas for PDF rendering */}
+      <canvas ref={pdfCanvasRef} style={{ display: 'none' }}></canvas>
+
+      {/* User ID Display */}
+      {userId && (
+        <div className="absolute top-4 left-4 bg-gray-700 text-gray-300 text-xs px-3 py-1 rounded-full shadow-sm">
+          User ID: {userId}
+        </div>
+      )}
+
+      <div className="bg-gray-800 rounded-xl shadow-2xl p-8 max-w-xl w-full">
+        <h1 className="text-3xl font-extrabold text-white mb-6 text-center">
+          {documentType === 'egyptianId' ? "Egyptian ID Batch Extractor" : "Passport Batch Extractor"}
+        </h1>
+        <p className="text-gray-300 mb-8 text-center">
+          Selected: <span className="font-semibold text-blue-400">{documentType === 'egyptianId' ? "Egyptian National ID" : "Passport"}</span>.
+          Select a folder containing {documentType === 'egyptianId' ? "ID images or PDFs" : "passport images or PDFs"} to extract key information and download it as an Excel file.
+        </p>
+
+        <div className="mb-6">
+          <label htmlFor="folder-upload" className="block text-sm font-medium text-gray-200 mb-2">
+            Select Folder with Documents
+          </label>
+          <input
+            id="folder-upload"
+            type="file"
+            // @ts-ignore
+            webkitdirectory=""
+            directory=""
+            multiple
+            accept="image/*,application/pdf" // Accept images and PDFs
+            onChange={handleFolderChange}
+            className="block w-full text-sm text-gray-100
+                       file:mr-4 file:py-2 file:px-4
+                       file:rounded-full file:border-0
+                       file:text-sm file:font-semibold
+                       file:bg-gray-700 file:text-blue-300
+                       hover:file:bg-gray-600 cursor-pointer rounded-lg border border-gray-600"
+          />
+        </div>
+
+        {loading && (
+          <div className="mt-6 flex items-center justify-center text-blue-400 font-semibold text-lg">
+            <svg className="animate-spin -ml-1 mr-3 h-6 w-6 text-blue-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Processing {processedFilesCount} of {totalFilesToProcess} documents...
+          </div>
+        )}
+
+        {error && (
+          <div className="mt-6 p-4 bg-red-800 border border-red-600 text-red-200 rounded-lg" role="alert">
+            <p className="font-bold">Error:</p>
+            <p>{error}</p>
+          </div>
+        )}
+
+        {/* Display extracted data for each file */}
+        {allExtractedData.length > 0 && (
+          <div className="mt-8 p-6 bg-gray-700 rounded-lg shadow-inner max-h-96 overflow-y-auto">
+            <h2 className="text-xl font-bold text-white mb-4 text-center">Extracted Information per Document</h2>
+            {allExtractedData.map((data, index) => (
+              <div key={index} className="mb-6 pb-4 border-b border-gray-600 last:border-b-0">
+                <h3 className="text-lg font-semibold text-blue-400 mb-2">File: {data.filename} ({data.documentType === 'egyptianId' ? 'Egyptian ID' : 'Passport'})</h3>
+                {data.error ? (
+                  <div className="p-3 bg-red-900 text-red-300 rounded-md">
+                    <p>Error for this file: {data.error}</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {Object.entries(data).map(([key, value]) => (
+                      // Exclude filename and documentType from this detailed list as they are displayed in the header
+                      (key !== 'filename' && key !== 'documentType') && (
+                        <div key={key} className="flex items-center justify-between py-1 border-b border-gray-600 last:border-b-0">
+                          <span className="font-semibold text-gray-300">{key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}:</span>
+                          <span className="text-gray-100 break-words text-right max-w-[70%]">{value || "Not Found"}</span>
+                        </div>
+                      )
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Processing Complete / Excel Download Confirmation */}
+        {!loading && totalFilesToProcess > 0 && processedFilesCount === totalFilesToProcess && (
+          <div className="mt-8 p-6 bg-green-900 rounded-lg shadow-inner text-center">
+            <h2 className="text-xl font-bold text-green-300 mb-4">Processing Complete!</h2>
+            <p className="text-gray-200">
+              Successfully processed {allExtractedData.length} documents. An Excel file named <span className="font-bold">extracted_data.xlsx</span> has been downloaded.
+            </p>
+            {allExtractedData.some(data => data.error) && (
+              <p className="text-red-300 mt-2 text-sm">Some files might have had errors during extraction. Check the downloaded Excel file for details.</p>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default App;
