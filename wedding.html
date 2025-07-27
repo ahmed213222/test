@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>باقي على فرحنا</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Cairo & Amiri -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@700&family=Cairo:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        /* Custom styles */
+        body {
+            font-family: 'Cairo', sans-serif;
+            overflow: hidden; /* Hide scrollbars caused by petals and sparkles */
+            cursor: default;
+        }
+        .font-amiri {
+            font-family: 'Amiri', serif;
+        }
+        .content-overlay {
+            background-color: rgba(255, 255, 255, 0.88);
+            backdrop-filter: blur(10px);
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .fade-in {
+            animation: fadeIn 1.5s ease-out forwards;
+        }
+
+        /* Falling Petals Animation */
+        .petal {
+            position: absolute;
+            background: #f472b6;
+            border-radius: 50% 0;
+            opacity: 0.7;
+            animation: fall linear infinite;
+            pointer-events: none;
+        }
+
+        @keyframes fall {
+            0% {
+                transform: translateY(-10vh) rotate(0deg);
+            }
+            100% {
+                transform: translateY(110vh) rotate(720deg) translateX(5vw); /* Added horizontal sway */
+            }
+        }
+        
+        /* Heartbeat animation */
+        @keyframes heartbeat {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.3); }
+        }
+        .heartbeat {
+            display: inline-block;
+            animation: heartbeat 1.5s ease-in-out infinite;
+        }
+
+        /* Glow effect for countdown boxes */
+        @keyframes glow {
+            0%, 100% {
+                box-shadow: 0 0 5px rgba(236, 72, 153, 0.4), 0 0 10px rgba(236, 72, 153, 0.3);
+            }
+            50% {
+                box-shadow: 0 0 20px rgba(236, 72, 153, 0.7), 0 0 30px rgba(236, 72, 153, 0.5);
+            }
+        }
+        .countdown-box {
+            animation: glow 3s ease-in-out infinite;
+        }
+
+        /* Sparkle effect on mouse move */
+        .sparkle {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background-color: #fef08a; /* Light yellow */
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9999;
+            opacity: 1;
+            transform: scale(1);
+            animation: sparkle-anim 0.8s forwards;
+        }
+
+        @keyframes sparkle-anim {
+            to {
+                opacity: 0;
+                transform: scale(0) rotate(360deg);
+            }
+        }
+
+        /* Music button style */
+        #music-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 100;
+            background-color: rgba(255, 255, 255, 0.7);
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <!-- Background Audio -->
+    <audio id="background-music" loop>
+        <source src="https://cdn.pixabay.com/audio/2022/02/14/audio_204c33a959.mp3" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+
+    <!-- Music Button -->
+    <button id="music-btn">
+        <svg id="music-on-icon" class="w-6 h-6 text-pink-600 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.88 5.88a15 15 0 0121.213 0M9 9l6-6m0 6l-6-6"></path></svg>
+        <svg id="music-off-icon" class="w-6 h-6 text-gray-500" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM14.657 2.929a1 1 0 011.414 0A9.972 9.972 0 0119 10a9.972 9.972 0 01-2.929 7.071 1 1 0 01-1.414-1.414A7.971 7.971 0 0017 10c0-2.21-.894-4.208-2.343-5.657a1 1 0 010-1.414zm-2.829 2.828a1 1 0 011.415 0A5.983 5.983 0 0115 10a5.984 5.984 0 01-1.757 4.243 1 1 0 01-1.415-1.415A3.984 3.984 0 0013 10a3.983 3.983 0 00-1.172-2.828 1 1 0 010-1.415z" clip-rule="evenodd"></path></svg>
+    </button>
+    
+    <!-- Petal container -->
+    <div id="petal-container" class="absolute inset-0 z-0"></div>
+
+    <!-- Background Image Container -->
+    <div class="absolute inset-0 z-10">
+        <img src="https://images.pexels.com/photos/1730877/pexels-photo-1730877.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2" 
+             alt="خلفية ورد" 
+             class="w-full h-full object-cover">
+        <div class="absolute inset-0 bg-pink-100 opacity-30"></div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="relative min-h-screen flex flex-col items-center justify-center p-4 z-20">
+        <div class="content-overlay p-6 sm:p-8 md:p-12 rounded-2xl shadow-2xl text-center w-full max-w-md sm:max-w-xl md:max-w-4xl mx-auto fade-in">
+            <!-- Main Heading -->
+            <h1 class="text-4xl sm:text-5xl md:text-7xl font-bold text-pink-800 font-amiri flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-0" style="text-shadow: 2px 2px 4px rgba(0,0,0,0.1);">
+                احمد
+                <span class="text-red-500 sm:mx-4 heartbeat">❤️</span>
+                ابرار
+            </h1>
+            
+            <!-- Subheading -->
+            <p class="mt-3 sm:mt-4 text-xl sm:text-2xl md:text-3xl text-gray-700" style="text-shadow: 1px 1px 2px rgba(0,0,0,0.1);">
+                باقي على فرحنا
+            </p>
+
+            <!-- Countdown Timer -->
+            <div id="countdown" class="mt-6 sm:mt-8 grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 md:gap-6 text-gray-800">
+                <div class="bg-white/60 p-3 sm:p-4 rounded-lg shadow-lg countdown-box">
+                    <div id="days" class="text-3xl sm:text-4xl md:text-6xl font-bold">00</div>
+                    <div class="text-xs sm:text-sm">أيام</div>
+                </div>
+                <div class="bg-white/60 p-3 sm:p-4 rounded-lg shadow-lg countdown-box">
+                    <div id="hours" class="text-3xl sm:text-4xl md:text-6xl font-bold">00</div>
+                    <div class="text-xs sm:text-sm">ساعات</div>
+                </div>
+                <div class="bg-white/60 p-3 sm:p-4 rounded-lg shadow-lg countdown-box">
+                    <div id="minutes" class="text-3xl sm:text-4xl md:text-6xl font-bold">00</div>
+                    <div class="text-xs sm:text-sm">دقائق</div>
+                </div>
+                <div class="bg-white/60 p-3 sm:p-4 rounded-lg shadow-lg countdown-box">
+                    <div id="seconds" class="text-3xl sm:text-4xl md:text-6xl font-bold">00</div>
+                    <div class="text-xs sm:text-sm">ثواني</div>
+                </div>
+            </div>
+
+            <!-- Expiration Message -->
+            <div id="celebration" class="hidden mt-8 text-4xl sm:text-5xl font-bold text-pink-600 font-amiri">
+                🎉 ألف مبروك! 🎉
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Countdown Timer Logic ---
+        const countDownDate = new Date("Oct 16, 2025 00:00:00").getTime();
+        const daysEl = document.getElementById('days');
+        const hoursEl = document.getElementById('hours');
+        const minutesEl = document.getElementById('minutes');
+        const secondsEl = document.getElementById('seconds');
+        const countdownEl = document.getElementById('countdown');
+        const celebrationEl = document.getElementById('celebration');
+
+        const x = setInterval(function() {
+            const now = new Date().getTime();
+            const distance = countDownDate - now;
+            const formatTime = (time) => time < 10 ? `0${time}` : String(time).padStart(2, '0');
+
+            if (distance < 0) {
+                clearInterval(x);
+                countdownEl.classList.add('hidden');
+                celebrationEl.classList.remove('hidden');
+                return;
+            }
+            
+            daysEl.innerHTML = formatTime(Math.floor(distance / (1000 * 60 * 60 * 24)));
+            hoursEl.innerHTML = formatTime(Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)));
+            minutesEl.innerHTML = formatTime(Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60)));
+            secondsEl.innerHTML = formatTime(Math.floor((distance % (1000 * 60)) / 1000));
+        }, 1000);
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- Falling Petals Logic ---
+            const petalContainer = document.getElementById('petal-container');
+            const numberOfPetals = 30;
+            for (let i = 0; i < numberOfPetals; i++) {
+                const petal = document.createElement('div');
+                petal.className = 'petal';
+                const size = Math.random() * 15 + 10;
+                const left = Math.random() * 100;
+                const animDuration = Math.random() * 8 + 7;
+                const animDelay = Math.random() * 5;
+                petal.style.width = `${size}px`;
+                petal.style.height = `${size}px`;
+                petal.style.left = `${left}vw`;
+                petal.style.animationDuration = `${animDuration}s`;
+                petal.style.animationDelay = `${animDelay}s`;
+                petal.style.background = i % 2 === 0 ? '#f472b6' : '#fce7f3';
+                petal.style.opacity = Math.random() * 0.5 + 0.3;
+                petalContainer.appendChild(petal);
+            }
+
+            // --- Sparkles on Mouse Move ---
+            document.addEventListener('mousemove', (e) => {
+                const sparkle = document.createElement('div');
+                sparkle.className = 'sparkle';
+                sparkle.style.top = `${e.pageY}px`;
+                sparkle.style.left = `${e.pageX}px`;
+                document.body.appendChild(sparkle);
+                setTimeout(() => {
+                    sparkle.remove();
+                }, 800);
+            });
+
+            // --- Background Music Logic ---
+            const musicBtn = document.getElementById('music-btn');
+            const musicOnIcon = document.getElementById('music-on-icon');
+            const musicOffIcon = document.getElementById('music-off-icon');
+            const backgroundMusic = document.getElementById('background-music');
+            
+            musicBtn.addEventListener('click', () => {
+                if (backgroundMusic.paused) {
+                    backgroundMusic.play();
+                    musicOnIcon.classList.remove('hidden');
+                    musicOffIcon.classList.add('hidden');
+                } else {
+                    backgroundMusic.pause();
+                    musicOnIcon.classList.add('hidden');
+                    musicOffIcon.classList.remove('hidden');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
