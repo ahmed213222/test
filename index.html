@@ -241,7 +241,7 @@
     </div>
     
     <!-- WhatsApp Floating Button -->
-    <a href="https://wa.me/201556002721" target="_blank" class="fixed bottom-5 left-5 bg-green-500 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg hover:bg-green-600 transition-transform transform hover:scale-110 z-50">
+    <a href="https://wa.me/201234567890" target="_blank" class="fixed bottom-5 left-5 bg-green-500 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg hover:bg-green-600 transition-transform transform hover:scale-110 z-50">
         <i class="fab fa-whatsapp fa-2x"></i>
     </a>
 
@@ -280,6 +280,8 @@
         const themeToggleBtn = document.getElementById('theme-toggle');
         const themeToggleDarkIcon = document.getElementById('theme-toggle-dark-icon');
         const themeToggleLightIcon = document.getElementById('theme-toggle-light-icon');
+        const menuBtn = document.getElementById('menu-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
 
         // --- THEME TOGGLE ---
         const updateThemeIcons = () => {
@@ -301,6 +303,61 @@
             }
             updateThemeIcons();
         });
+
+        // --- MOBILE MENU ---
+        function updateMobileMenu() {
+            if (!mobileMenu) return;
+
+            let authHTML = '';
+            if (currentUser) {
+                authHTML = `
+                    <div class="pt-4 mt-4 border-t border-gray-200 dark:border-gray-700">
+                        <p class="py-2 text-gray-600 dark:text-gray-300">${currentUser.email}</p>
+                        <a href="#" id="mobile-logout-button" class="block w-full text-left py-2 text-red-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md px-2">تسجيل الخروج</a>
+                    </div>
+                `;
+            } else {
+                authHTML = `
+                    <div class="pt-4 mt-4 border-t border-gray-200 dark:border-gray-700">
+                        <a href="#" id="mobile-login-button" class="block w-full text-left py-2 text-pink-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md px-2 font-bold">تسجيل الدخول</a>
+                    </div>
+                `;
+            }
+
+            mobileMenu.innerHTML = `
+                <a href="#home" class="block py-2 nav-link rounded-md px-2 hover:bg-gray-100 dark:hover:bg-gray-700">الرئيسية</a>
+                <a href="#new-arrivals" class="block py-2 nav-link rounded-md px-2 hover:bg-gray-100 dark:hover:bg-gray-700">المنتجات</a>
+                <a href="#offers" class="block py-2 nav-link rounded-md px-2 hover:bg-gray-100 dark:hover:bg-gray-700">العروض</a>
+                <a href="#about" class="block py-2 nav-link rounded-md px-2 hover:bg-gray-100 dark:hover:bg-gray-700">من نحن</a>
+                ${authHTML}
+            `;
+
+            const mobileLoginBtn = document.getElementById('mobile-login-button');
+            if (mobileLoginBtn) {
+                mobileLoginBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    authError.textContent = '';
+                    authModal.classList.remove('hidden');
+                    mobileMenu.classList.add('hidden');
+                });
+            }
+
+            const mobileLogoutBtn = document.getElementById('mobile-logout-button');
+            if (mobileLogoutBtn) {
+                mobileLogoutBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    signOut(auth);
+                    mobileMenu.classList.add('hidden');
+                });
+            }
+            
+            mobileMenu.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', () => {
+                     mobileMenu.classList.add('hidden');
+                });
+            });
+        }
+
 
         // --- AUTH STATE CHANGE ---
         onAuthStateChanged(auth, async (user) => {
@@ -324,6 +381,7 @@
                 cart = [];
             }
             updateCartUI();
+            updateMobileMenu(); // Update mobile menu on auth change
         });
 
         // --- FIRESTORE ---
@@ -387,7 +445,8 @@
 
         function sendCartViaWhatsApp() {
             if (cart.length === 0) {
-                alert("سلة التسوق فارغة!");
+                // This is better than an alert which is blocked in this environment
+                console.log("Cart is empty, cannot send WhatsApp message.");
                 return;
             }
             let message = "أهلاً Family Store، أود طلب المنتجات التالية:\n\n";
@@ -556,6 +615,12 @@
         document.addEventListener('DOMContentLoaded', () => {
             updateThemeIcons();
             fetchProducts();
+            updateMobileMenu(); // Initial render for mobile menu
+
+            // Mobile menu toggle
+            menuBtn.addEventListener('click', () => {
+                mobileMenu.classList.toggle('hidden');
+            });
             
             // Auth Modal Logic
             const loginForm = document.getElementById('login-form');
