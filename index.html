@@ -50,6 +50,9 @@
         .nav-link {
              @apply text-gray-600 dark:text-gray-300 hover:text-pink-500 dark:hover:text-pink-400 transition duration-300;
         }
+        #theme-toggle svg {
+            transition: transform 0.3s ease;
+        }
     </style>
 </head>
 <body class="bg-pink-50 text-gray-800 dark:bg-gray-900 dark:text-gray-200 transition-colors duration-500">
@@ -69,8 +72,8 @@
             <div class="flex items-center space-x-2 sm:space-x-4 space-x-reverse">
                 <!-- Theme Toggle Button -->
                 <button id="theme-toggle" type="button" class="text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-sm p-2.5">
-                    <svg id="theme-toggle-dark-icon" class="hidden w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path></svg>
-                    <svg id="theme-toggle-light-icon" class="hidden w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" fill-rule="evenodd" clip-rule="evenodd"></path></svg>
+                    <svg id="theme-toggle-dark-icon" class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path></svg>
+                    <svg id="theme-toggle-light-icon" class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" fill-rule="evenodd" clip-rule="evenodd"></path></svg>
                 </button>
 
                 <!-- Cart Button -->
@@ -216,6 +219,11 @@
         </div>
     </div>
     
+    <!-- WhatsApp Floating Button -->
+    <a href="https://wa.me/201234567890" target="_blank" class="fixed bottom-5 left-5 bg-green-500 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg hover:bg-green-600 transition-transform transform hover:scale-110 z-50">
+        <i class="fab fa-whatsapp fa-2x"></i>
+    </a>
+
     <!-- Firebase SDK -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -248,6 +256,30 @@
         const cartItemsContainer = document.getElementById('cart-items');
         const cartTotalEl = document.getElementById('cart-total');
         const cartCountEl = document.getElementById('cart-count');
+        const themeToggleBtn = document.getElementById('theme-toggle');
+        const themeToggleDarkIcon = document.getElementById('theme-toggle-dark-icon');
+        const themeToggleLightIcon = document.getElementById('theme-toggle-light-icon');
+
+        // --- THEME TOGGLE ---
+        const updateThemeIcons = () => {
+            if (document.documentElement.classList.contains('dark')) {
+                themeToggleLightIcon.classList.remove('hidden');
+                themeToggleDarkIcon.classList.add('hidden');
+            } else {
+                themeToggleLightIcon.classList.add('hidden');
+                themeToggleDarkIcon.classList.remove('hidden');
+            }
+        };
+
+        themeToggleBtn.addEventListener('click', () => {
+            document.documentElement.classList.toggle('dark');
+            if (document.documentElement.classList.contains('dark')) {
+                localStorage.setItem('color-theme', 'dark');
+            } else {
+                localStorage.setItem('color-theme', 'light');
+            }
+            updateThemeIcons();
+        });
 
         // --- AUTH STATE CHANGE ---
         onAuthStateChanged(auth, async (user) => {
@@ -340,7 +372,7 @@
             cartCountEl.innerText = count;
         }
 
-        // --- RENDERING ---
+        // --- RENDERING & PAGE LOGIC ---
         function renderProducts(productsToRender) {
             const productGrid = document.getElementById('product-grid');
             if (!productGrid) return;
@@ -349,7 +381,7 @@
                 return `
                     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden product-card transition duration-300 flex flex-col" data-product-id="${product.id}">
                         <div class="relative group" data-current-image-index="0">
-                            <img src="${product.images[0]}" alt="${product.name}" class="w-full h-64 object-cover cursor-pointer product-image" onclick="showProductDetail('${product.id}')">
+                            <img src="${product.images && product.images.length > 0 ? product.images[0] : 'https://placehold.co/400x500/cccccc/ffffff?text=No+Image'}" alt="${product.name}" class="w-full h-64 object-cover cursor-pointer product-image" onclick="showProductDetail('${product.id}')">
                             ${hasMultipleImages ? `
                             <button onclick="changeImage(event, '${product.id}', 'prev')" class="image-slider-btn absolute top-1/2 left-2 transform -translate-y-1/2 bg-black bg-opacity-30 text-white rounded-full w-8 h-8 flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-opacity-50"><i class="fas fa-chevron-left"></i></button>
                             <button onclick="changeImage(event, '${product.id}', 'next')" class="image-slider-btn absolute top-1/2 right-2 transform -translate-y-1/2 bg-black bg-opacity-30 text-white rounded-full w-8 h-8 flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-opacity-50"><i class="fas fa-chevron-right"></i></button>
@@ -364,9 +396,28 @@
                 `;
             }).join('');
         }
+        
+        window.changeImage = function(event, productId, direction) {
+            event.stopPropagation();
+            const card = document.querySelector(`.product-card[data-product-id='${productId}']`);
+            const imageContainer = card.querySelector('.relative.group');
+            const imageElement = card.querySelector('.product-image');
+            const product = allProducts.find(p => p.id === productId);
+            let currentIndex = parseInt(imageContainer.dataset.currentImageIndex);
+            let newIndex = direction === 'next'
+                ? (currentIndex + 1) % product.images.length
+                : (currentIndex - 1 + product.images.length) % product.images.length;
+            imageElement.src = product.images[newIndex];
+            imageContainer.dataset.currentImageIndex = newIndex;
+        }
+
+        window.showProductDetail = function(productId) {
+            // Logic to show product detail page
+        }
 
         // --- EVENT LISTENERS & INITIALIZATION ---
         document.addEventListener('DOMContentLoaded', () => {
+            updateThemeIcons();
             fetchProducts();
             
             // Auth Modal Logic
