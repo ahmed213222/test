@@ -53,6 +53,9 @@
         #theme-toggle svg {
             transition: transform 0.3s ease;
         }
+        .image-slider-btn {
+            transition: opacity 0.3s ease, background-color 0.3s ease;
+        }
     </style>
 </head>
 <body class="bg-pink-50 text-gray-800 dark:bg-gray-900 dark:text-gray-200 transition-colors duration-500">
@@ -498,6 +501,52 @@
             cartTotalEl.innerText = `${total} جنيه`;
             cartCountEl.innerText = count;
         }
+        
+        // --- IMAGE SLIDER & SWIPE LOGIC ---
+        window.changeImage = function(event, productId, direction) {
+            event.stopPropagation(); // Prevents card click
+            const card = document.querySelector(`.product-card[data-product-id='${productId}']`);
+            if (!card) return;
+            const imageContainer = card.querySelector('.product-image-container');
+            const imageElement = card.querySelector('.product-image');
+            const product = allProducts.find(p => p.id === productId);
+            if (!product || !product.images || product.images.length <= 1) return;
+
+            let currentIndex = parseInt(imageContainer.dataset.currentImageIndex || 0);
+            
+            let newIndex;
+            if (direction === 'next') {
+                newIndex = (currentIndex + 1) % product.images.length;
+            } else {
+                newIndex = (currentIndex - 1 + product.images.length) % product.images.length;
+            }
+            
+            imageElement.src = product.images[newIndex];
+            imageContainer.dataset.currentImageIndex = newIndex;
+        }
+
+        function attachSwipeListeners(productGrid) {
+            const imageContainers = productGrid.querySelectorAll('.product-image-container');
+            imageContainers.forEach(container => {
+                let touchstartX = 0;
+                const productId = container.closest('.product-card').dataset.productId;
+
+                container.addEventListener('touchstart', (event) => {
+                    touchstartX = event.changedTouches[0].screenX;
+                }, { passive: true });
+
+                container.addEventListener('touchend', (event) => {
+                    let touchendX = event.changedTouches[0].screenX;
+                    if (Math.abs(touchendX - touchstartX) < 50) return; // Ignore small movements
+                    
+                    if (touchendX < touchstartX) { // Swiped left
+                        changeImage(event, productId, 'next');
+                    } else { // Swiped right
+                        changeImage(event, productId, 'prev');
+                    }
+                }, { passive: true });
+            });
+        }
 
         // --- RENDERING & PAGE LOGIC ---
         function renderProducts(productsToRender) {
@@ -505,10 +554,16 @@
             if (!productGrid) return;
             productGrid.innerHTML = productsToRender.map(product => {
                 const description = product.description || "لا يوجد وصف متاح.";
+                const hasMultipleImages = Array.isArray(product.images) && product.images.length > 1;
+
                 return `
-                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden product-card transition duration-300 flex flex-col cursor-pointer" onclick="showProductDetail('${product.id}')">
-                        <div class="relative">
-                            <img src="${product.images && product.images.length > 0 ? product.images[0] : 'https://placehold.co/400x500/cccccc/ffffff?text=No+Image'}" alt="${product.name}" class="w-full h-64 object-cover product-image">
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden product-card transition duration-300 flex flex-col" data-product-id="${product.id}">
+                        <div class="relative group product-image-container" data-current-image-index="0" onclick="showProductDetail('${product.id}')">
+                            <img src="${product.images && product.images.length > 0 ? product.images[0] : 'https://placehold.co/400x500/cccccc/ffffff?text=No+Image'}" alt="${product.name}" class="w-full h-64 object-cover product-image cursor-pointer">
+                            ${hasMultipleImages ? `
+                            <button onclick="changeImage(event, '${product.id}', 'prev')" class="image-slider-btn absolute top-1/2 left-2 transform -translate-y-1/2 bg-black bg-opacity-30 text-white rounded-full w-8 h-8 flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-opacity-50 z-10"><i class="fas fa-chevron-left"></i></button>
+                            <button onclick="changeImage(event, '${product.id}', 'next')" class="image-slider-btn absolute top-1/2 right-2 transform -translate-y-1/2 bg-black bg-opacity-30 text-white rounded-full w-8 h-8 flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-opacity-50 z-10"><i class="fas fa-chevron-right"></i></button>
+                            ` : ''}
                         </div>
                         <div class="p-6 text-center flex-grow flex flex-col">
                             <h3 class="font-bold text-xl mb-2">${product.name}</h3>
@@ -519,6 +574,9 @@
                     </div>
                 `;
             }).join('');
+            
+            // Attach swipe listeners after products are rendered
+            attachSwipeListeners(productGrid);
         }
 
         window.showMainPage = function() {
