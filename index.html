@@ -1,262 +1,417 @@
 <!DOCTYPE html>
-<html lang="en" class="scroll-smooth">
+<html lang="ar" dir="rtl" class=""> <!-- The 'dark' class will be toggled here -->
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aura - Exquisite Perfumes</title>
+    <title>Family Store - متجر العائلة لملابس الأطفال</title>
     
-    <!-- Tailwind CSS -->
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Google Fonts (Inter) -->
+    <!-- Google Fonts - Cairo -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
     
-    <!-- Feather Icons -->
-    <script src="https://unpkg.com/feather-icons"></script>
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
+    <script>
+        // Set dark mode based on user preference
+        if (localStorage.getItem('color-theme') === 'dark' || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+
+        // Configure Tailwind for dark mode
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {}
+            }
+        }
+    </script>
+    
     <style>
-        /* Custom styles for typography and theme */
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #fdfdfd;
+        body { font-family: 'Cairo', sans-serif; }
+        .hero-section {
+            background-image: linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3)), url('http://googleusercontent.com/file_content/0');
+            background-size: cover;
+            background-position: center;
         }
-        h1, h2, h3, .font-serif {
-            font-family: 'Playfair Display', serif;
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
         }
-        .hero-bg {
-             background-image: url('https://images.unsplash.com/photo-1557174644-64c28c03e48a?q=80&w=2940&auto=format&fit=crop');
-             background-size: cover;
-             background-position: center;
+        .modal-overlay {
+            transition: opacity 0.3s ease;
         }
-        .nav-scrolled {
-            background-color: rgba(255, 255, 255, 0.9);
-            backdrop-filter: blur(10px);
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        .modal-content {
+            transition: transform 0.3s ease;
         }
     </style>
 </head>
-<body class="text-gray-800">
+<body class="bg-pink-50 text-gray-800 dark:bg-gray-900 dark:text-gray-200 transition-colors duration-500">
 
-    <!-- Header & Navigation -->
-    <header id="navbar" class="fixed top-0 left-0 right-0 z-50 transition-all duration-300">
-        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
-            <h1 class="text-3xl font-bold text-gray-900 font-serif">Aura</h1>
-            <nav class="hidden md:flex items-center space-x-8">
-                <a href="#home" class="text-gray-600 hover:text-gray-900 transition-colors">Home</a>
-                <a href="#featured" class="text-gray-600 hover:text-gray-900 transition-colors">Featured</a>
-                <a href="#categories" class="text-gray-600 hover:text-gray-900 transition-colors">Categories</a>
-                <a href="#contact" class="text-gray-600 hover:text-gray-900 transition-colors">Contact</a>
-            </nav>
-            <div class="flex items-center space-x-4">
-                 <button class="text-gray-600 hover:text-gray-900">
-                    <i data-feather="search"></i>
-                </button>
-                <button class="text-gray-600 hover:text-gray-900">
-                    <i data-feather="shopping-bag"></i>
-                </button>
-                <button class="md:hidden text-gray-600 hover:text-gray-900" id="mobile-menu-button">
-                    <i data-feather="menu"></i>
-                </button>
+    <!-- Header Section -->
+    <header class="bg-white dark:bg-gray-800 shadow-md sticky top-0 z-50">
+        <nav class="container mx-auto px-4 sm:px-6 py-3 flex justify-between items-center">
+            <a href="#" class="text-3xl font-bold text-pink-500 dark:text-pink-400" onclick="showMainPage()">Family Store</a>
+            
+            <div class="hidden md:flex items-center space-x-4 space-x-reverse">
+                <a href="#home" class="text-gray-600 dark:text-gray-300 hover:text-pink-500 dark:hover:text-pink-400 transition duration-300">الرئيسية</a>
+                <a href="#new-arrivals" class="text-gray-600 dark:text-gray-300 hover:text-pink-500 dark:hover:text-pink-400 transition duration-300">المنتجات</a>
+                <a href="#offers" class="text-gray-600 dark:text-gray-300 hover:text-pink-500 dark:hover:text-pink-400 transition duration-300">العروض</a>
+                <a href="#about" class="text-gray-600 dark:text-gray-300 hover:text-pink-500 dark:hover:text-pink-400 transition duration-300">من نحن</a>
             </div>
-        </div>
+
+            <div class="flex items-center space-x-2 sm:space-x-4 space-x-reverse">
+                <!-- Theme Toggle Button -->
+                <button id="theme-toggle" type="button" class="text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none rounded-lg text-sm p-2.5">
+                    <svg id="theme-toggle-dark-icon" class="hidden w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path></svg>
+                    <svg id="theme-toggle-light-icon" class="hidden w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" fill-rule="evenodd" clip-rule="evenodd"></path></svg>
+                </button>
+
+                <!-- Cart Button -->
+                <button id="cart-button" class="relative text-gray-500 dark:text-gray-400 hover:text-pink-500 dark:hover:text-pink-400 p-2.5">
+                    <i class="fas fa-shopping-cart fa-lg"></i>
+                    <span id="cart-count" class="absolute -top-1 -right-1 bg-pink-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">0</span>
+                </button>
+                
+                <!-- Login Button -->
+                <button id="login-button" class="hidden sm:block bg-pink-500 text-white px-4 py-2 rounded-md hover:bg-pink-600">تسجيل الدخول</button>
+
+                <!-- Mobile Menu Button -->
+                <div class="md:hidden">
+                    <button id="menu-btn" class="text-gray-600 dark:text-gray-300 focus:outline-none p-2.5">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+                    </button>
+                </div>
+            </div>
+        </nav>
         <!-- Mobile Menu -->
-        <div id="mobile-menu" class="hidden md:hidden bg-white px-6 pb-4">
-            <a href="#home" class="block py-2 text-gray-600 hover:text-gray-900">Home</a>
-            <a href="#featured" class="block py-2 text-gray-600 hover:text-gray-900">Featured</a>
-            <a href="#categories" class="block py-2 text-gray-600 hover:text-gray-900">Categories</a>
-            <a href="#contact" class="block py-2 text-gray-600 hover:text-gray-900">Contact</a>
+        <div id="mobile-menu" class="hidden md:hidden px-6 pb-4 bg-white dark:bg-gray-800">
+            <!-- Mobile menu links here -->
         </div>
     </header>
 
-    <!-- Hero Section -->
-    <section id="home" class="h-screen min-h-[700px] flex items-center hero-bg">
-        <div class="container mx-auto px-6 text-left text-white">
-            <div class="bg-black bg-opacity-40 p-10 rounded-lg max-w-lg">
-                <h2 class="text-5xl md:text-6xl font-bold font-serif leading-tight">Discover Your Signature Scent</h2>
-                <p class="mt-4 text-lg text-gray-200">Crafted with the finest ingredients from around the world. Experience the essence of luxury.</p>
-                <a href="#featured" class="mt-8 inline-block bg-white text-gray-900 font-semibold py-3 px-8 rounded-full hover:bg-gray-200 transition-all duration-300">Explore Collection</a>
-            </div>
-        </div>
-    </section>
+    <!-- Main Page Content -->
+    <div id="main-page">
+        <main>
+            <!-- Hero Section -->
+            <section id="home" class="hero-section h-[60vh] md:h-[80vh] flex items-center justify-center text-white text-center">
+                <div class="container mx-auto px-6">
+                    <h1 class="text-4xl md:text-6xl font-bold mb-4 leading-tight">أناقة أطفالكم تبدأ من هنا</h1>
+                    <p class="text-lg md:text-xl mb-8 max-w-2xl mx-auto">أفضل تشكيلة من ملابس الأطفال العصرية والمريحة.</p>
+                    <a href="#new-arrivals" class="bg-pink-500 hover:bg-pink-600 text-white font-bold py-3 px-8 rounded-full transition duration-300 text-lg">
+                        اكتشف الآن
+                    </a>
+                </div>
+            </section>
 
-    <!-- Featured Products Section -->
-    <section id="featured" class="py-20 bg-white">
-        <div class="container mx-auto px-6">
-            <h2 class="text-4xl font-serif text-center mb-12">Featured Fragrances</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                <!-- Product Card 1 -->
-                <div class="group">
-                    <div class="bg-gray-100 rounded-lg overflow-hidden aspect-w-1 aspect-h-1">
-                        <img src="https://images.unsplash.com/photo-1541643600914-78b084683601?q=80&w=2700&auto=format&fit=crop" 
-                             alt="Citrus Noir Perfume" 
-                             class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                             onerror="this.onerror=null;this.src='https://placehold.co/600x600/e2e8f0/334155?text=Citrus+Noir';">
-                    </div>
-                    <div class="mt-4 text-center">
-                        <h3 class="text-xl font-semibold">Citrus Noir</h3>
-                        <p class="text-gray-500 mt-1">A bold blend of bergamot and dark woods.</p>
-                        <p class="mt-2 font-bold text-lg">$180</p>
-                    </div>
-                </div>
-                <!-- Product Card 2 -->
-                <div class="group">
-                    <div class="bg-gray-100 rounded-lg overflow-hidden aspect-w-1 aspect-h-1">
-                        <img src="https://images.unsplash.com/photo-1622639102233-042a74790586?q=80&w=2787&auto=format&fit=crop" 
-                             alt="Rose Petal Perfume" 
-                             class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                             onerror="this.onerror=null;this.src='https://placehold.co/600x600/e2e8f0/334155?text=Rose+Petal';">
-                    </div>
-                    <div class="mt-4 text-center">
-                        <h3 class="text-xl font-semibold">Rose Petal</h3>
-                        <p class="text-gray-500 mt-1">Delicate notes of rose and white musk.</p>
-                        <p class="mt-2 font-bold text-lg">$220</p>
-                    </div>
-                </div>
-                <!-- Product Card 3 -->
-                <div class="group">
-                    <div class="bg-gray-100 rounded-lg overflow-hidden aspect-w-1 aspect-h-1">
-                        <img src="https://images.unsplash.com/photo-1594035918258-135a894a4a76?q=80&w=2787&auto=format&fit=crop" 
-                             alt="Sandalwood Dream Perfume" 
-                             class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                             onerror="this.onerror=null;this.src='https://placehold.co/600x600/e2e8f0/334155?text=Sandalwood';">
-                    </div>
-                    <div class="mt-4 text-center">
-                        <h3 class="text-xl font-semibold">Sandalwood Dream</h3>
-                        <p class="text-gray-500 mt-1">Warm sandalwood with a hint of vanilla.</p>
-                        <p class="mt-2 font-bold text-lg">$250</p>
-                    </div>
-                </div>
-                <!-- Product Card 4 -->
-                <div class="group">
-                    <div class="bg-gray-100 rounded-lg overflow-hidden aspect-w-1 aspect-h-1">
-                        <img src="https://images.unsplash.com/photo-1619994129497-6c36b65125b4?q=80&w=2787&auto=format&fit=crop" 
-                             alt="Ocean Breeze Perfume" 
-                             class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                             onerror="this.onerror=null;this.src='https://placehold.co/600x600/e2e8f0/334155?text=Ocean+Breeze';">
-                    </div>
-                    <div class="mt-4 text-center">
-                        <h3 class="text-xl font-semibold">Ocean Breeze</h3>
-                        <p class="text-gray-500 mt-1">Fresh aquatic notes with a salty accord.</p>
-                        <p class="mt-2 font-bold text-lg">$195</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-    
-    <!-- Categories Section -->
-    <section id="categories" class="py-20 bg-gray-50">
-        <div class="container mx-auto px-6">
-            <h2 class="text-4xl font-serif text-center mb-12">Shop by Category</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <!-- Category 1: For Her -->
-                <div class="relative rounded-lg overflow-hidden h-96">
-                    <img src="https://images.unsplash.com/photo-1587038414348-c917c27c81a3?q=80&w=2835&auto=format&fit=crop" 
-                         alt="Woman with perfume" 
-                         class="w-full h-full object-cover"
-                         onerror="this.onerror=null;this.src='https://placehold.co/800x600/e2e8f0/334155?text=For+Her';">
-                    <div class="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
-                        <div class="text-center">
-                            <h3 class="text-4xl font-serif text-white">For Her</h3>
-                            <a href="#" class="mt-4 inline-block border-2 border-white text-white font-semibold py-2 px-6 rounded-full hover:bg-white hover:text-gray-900 transition-all duration-300">View Scents</a>
+            <!-- Search and Filter Section -->
+            <section class="py-12 bg-white dark:bg-gray-800">
+                <div class="container mx-auto px-6">
+                    <div class="flex flex-col md:flex-row gap-4 items-center">
+                        <input type="text" id="search-input" placeholder="ابحث عن منتج..." class="w-full md:w-1/3 p-3 border rounded-md dark:bg-gray-700 dark:border-gray-600">
+                        <div id="filter-buttons" class="flex flex-wrap gap-2">
+                            <button class="filter-btn bg-pink-200 dark:bg-pink-800 px-4 py-2 rounded-md" data-category="all">الكل</button>
+                            <button class="filter-btn bg-gray-200 dark:bg-gray-700 px-4 py-2 rounded-md" data-category="فساتين">فساتين</button>
+                            <button class="filter-btn bg-gray-200 dark:bg-gray-700 px-4 py-2 rounded-md" data-category="أولاد">ملابس أولاد</button>
+                            <button class="filter-btn bg-gray-200 dark:bg-gray-700 px-4 py-2 rounded-md" data-category="مواليد">مواليد</button>
                         </div>
                     </div>
                 </div>
-                <!-- Category 2: For Him -->
-                <div class="relative rounded-lg overflow-hidden h-96">
-                    <img src="https://images.unsplash.com/photo-1610290583433-b8853a4478d2?q=80&w=2787&auto=format&fit=crop" 
-                         alt="Man with perfume" 
-                         class="w-full h-full object-cover"
-                         onerror="this.onerror=null;this.src='https://placehold.co/800x600/e2e8f0/334155?text=For+Him';">
-                    <div class="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
-                        <div class="text-center">
-                            <h3 class="text-4xl font-serif text-white">For Him</h3>
-                            <a href="#" class="mt-4 inline-block border-2 border-white text-white font-semibold py-2 px-6 rounded-full hover:bg-white hover:text-gray-900 transition-all duration-300">View Scents</a>
-                        </div>
+            </section>
+
+            <!-- New Arrivals Section -->
+            <section id="new-arrivals" class="py-16">
+                <div class="container mx-auto px-6">
+                    <h2 class="text-3xl font-bold text-center mb-10">جميع المنتجات</h2>
+                    <div id="product-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+                        <!-- Product cards will be dynamically inserted here -->
                     </div>
                 </div>
-            </div>
-        </div>
-    </section>
+            </section>
+            
+            <!-- Offers Section -->
+            <section id="offers" class="bg-pink-100 dark:bg-pink-900/50 py-16">
+                <div class="container mx-auto px-6 text-center">
+                    <h2 class="text-3xl font-bold mb-4">عروض خاصة!</h2>
+                    <p class="text-lg mb-8">خصم 20% على جميع الفساتين باستخدام كود: <span class="font-bold bg-yellow-300 dark:bg-yellow-600 px-2 py-1 rounded">KIDS20</span></p>
+                </div>
+            </section>
 
-    <!-- Contact / Newsletter Section -->
-    <section id="contact" class="py-20 bg-white">
-        <div class="container mx-auto px-6 text-center">
-            <h2 class="text-4xl font-serif mb-4">Join The Aura Club</h2>
-            <p class="text-gray-600 max-w-2xl mx-auto mb-8">
-                Subscribe to our newsletter for exclusive updates, new arrivals, and special offers.
-            </p>
-            <form class="max-w-md mx-auto flex">
-                <input type="email" placeholder="Enter your email" class="w-full px-4 py-3 rounded-l-full border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-800" required>
-                <button type="submit" class="bg-gray-800 text-white font-semibold px-8 py-3 rounded-r-full hover:bg-gray-900 transition-colors">Subscribe</button>
-            </form>
-        </div>
-    </section>
+            <!-- About Us Section -->
+            <section id="about" class="py-16">
+                <div class="container mx-auto px-6 text-center max-w-3xl">
+                    <h2 class="text-3xl font-bold mb-4">قصتنا</h2>
+                    <p class="text-gray-600 dark:text-gray-400 leading-relaxed">
+                        في Family Store، نؤمن بأن كل طفل يستحق أن يشعر بالراحة والثقة في ملابسه. بدأت رحلتنا بشغف لتوفير ملابس أطفال عالية الجودة بتصاميم عصرية وأسعار مناسبة.
+                    </p>
+                </div>
+            </section>
+        </main>
+    </div>
 
-    <!-- Footer -->
-    <footer class="bg-gray-900 text-white">
-        <div class="container mx-auto px-6 py-12">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
-                <div>
-                    <h3 class="text-2xl font-serif mb-4">Aura</h3>
-                    <p class="text-gray-400">The essence of luxury in every bottle.</p>
-                </div>
-                <div>
-                    <h4 class="font-semibold mb-4">Shop</h4>
-                    <ul>
-                        <li class="mb-2"><a href="#" class="text-gray-400 hover:text-white">All Perfumes</a></li>
-                        <li class="mb-2"><a href="#" class="text-gray-400 hover:text-white">For Her</a></li>
-                        <li class="mb-2"><a href="#" class="text-gray-400 hover:text-white">For Him</a></li>
-                        <li class="mb-2"><a href="#" class="text-gray-400 hover:text-white">New Arrivals</a></li>
-                    </ul>
-                </div>
-                <div>
-                    <h4 class="font-semibold mb-4">About</h4>
-                    <ul>
-                        <li class="mb-2"><a href="#" class="text-gray-400 hover:text-white">Our Story</a></li>
-                        <li class="mb-2"><a href="#" class="text-gray-400 hover:text-white">Ingredients</a></li>
-                        <li class="mb-2"><a href="#" class="text-gray-400 hover:text-white">Contact Us</a></li>
-                        <li class="mb-2"><a href="#" class="text-gray-400 hover:text-white">FAQs</a></li>
-                    </ul>
-                </div>
-                <div>
-                    <h4 class="font-semibold mb-4">Follow Us</h4>
-                    <div class="flex space-x-4">
-                        <a href="#" class="text-gray-400 hover:text-white"><i data-feather="instagram"></i></a>
-                        <a href="#" class="text-gray-400 hover:text-white"><i data-feather="facebook"></i></a>
-                        <a href="#" class="text-gray-400 hover:text-white"><i data-feather="twitter"></i></a>
-                    </div>
-                </div>
-            </div>
-            <div class="mt-12 border-t border-gray-800 pt-8 text-center text-gray-500">
-                <p>&copy; 2024 Aura Perfumes. All Rights Reserved.</p>
-            </div>
-        </div>
+    <!-- Product Detail Page (Hidden by default) -->
+    <div id="product-detail-page" class="hidden">
+        <!-- Product detail content will be dynamically inserted here -->
+    </div>
+
+    <!-- Footer Section -->
+    <footer id="contact" class="bg-gray-900 text-white pt-12">
+        <!-- Footer content remains the same -->
     </footer>
 
-    <script>
-        // Feather Icons initialization
-        feather.replace();
+    <!-- Modals -->
+    <!-- Cart Modal -->
+    <div id="cart-modal" class="modal-overlay fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 hidden">
+        <div class="modal-content bg-white dark:bg-gray-800 rounded-lg shadow-xl w-11/12 md:w-1/2 lg:w-1/3 p-6 transform scale-95">
+            <div class="flex justify-between items-center border-b pb-3 mb-4">
+                <h3 class="text-2xl font-bold">سلة التسوق</h3>
+                <button id="close-cart-button" class="text-gray-600 dark:text-gray-300">&times;</button>
+            </div>
+            <div id="cart-items" class="mb-4 max-h-64 overflow-y-auto">
+                <!-- Cart items will be dynamically inserted here -->
+            </div>
+            <div class="border-t pt-4">
+                <div class="flex justify-between font-bold text-xl">
+                    <span>الإجمالي:</span>
+                    <span id="cart-total">0 جنيه</span>
+                </div>
+                <button class="w-full bg-pink-500 text-white py-3 rounded-md mt-4 hover:bg-pink-600">إتمام الشراء</button>
+            </div>
+        </div>
+    </div>
 
-        // Navbar scroll effect
-        const navbar = document.getElementById('navbar');
-        window.addEventListener('scroll', () => {
-            if (window.scrollY > 50) {
-                navbar.classList.add('nav-scrolled');
+    <!-- Login Modal -->
+    <div id="login-modal" class="modal-overlay fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 hidden">
+        <div class="modal-content bg-white dark:bg-gray-800 rounded-lg shadow-xl w-11/12 md:w-1/3 p-8 transform scale-95">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold">تسجيل الدخول</h3>
+                <button id="close-login-button" class="text-gray-600 dark:text-gray-300">&times;</button>
+            </div>
+            <form>
+                <input type="email" placeholder="البريد الإلكتروني" class="w-full p-3 mb-4 border rounded-md dark:bg-gray-700 dark:border-gray-600">
+                <input type="password" placeholder="كلمة المرور" class="w-full p-3 mb-6 border rounded-md dark:bg-gray-700 dark:border-gray-600">
+                <button type="submit" class="w-full bg-pink-500 text-white py-3 rounded-md hover:bg-pink-600">دخول</button>
+                <p class="text-center mt-4">ليس لديك حساب؟ <a href="#" class="text-pink-500">أنشئ حسابًا جديدًا</a></p>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // --- DATA ---
+        const products = [
+            { id: 1, name: 'فستان بناتي مورد', price: 150, image: 'https://placehold.co/400x500/f87171/ffffff?text=فستان', category: 'فساتين' },
+            { id: 2, name: 'طقم ولادي كاجوال', price: 180, image: 'https://placehold.co/400x500/60a5fa/ffffff?text=طقم+ولادي', category: 'أولاد' },
+            { id: 3, name: 'تيشيرت بطبعة', price: 95, image: 'https://placehold.co/400x500/facc15/ffffff?text=تيشيرت', category: 'أولاد' },
+            { id: 4, name: 'سالوبيت مواليد', price: 120, image: 'https://placehold.co/400x500/4ade80/ffffff?text=سالوبيت', category: 'مواليد' },
+            { id: 5, name: 'فستان صيفي أزرق', price: 165, image: 'https://placehold.co/400x500/38bdf8/ffffff?text=فستان', category: 'فساتين' },
+            { id: 6, name: 'شورت جينز', price: 110, image: 'https://placehold.co/400x500/3b82f6/ffffff?text=شورت', category: 'أولاد' },
+            { id: 7, name: 'طقم مواليد قطني', price: 135, image: 'https://placehold.co/400x500/a78bfa/ffffff?text=طقم+مواليد', category: 'مواليد' },
+            { id: 8, name: 'فستان حفلات', price: 250, image: 'https://placehold.co/400x500/ec4899/ffffff?text=فستان+حفلة', category: 'فساتين' },
+        ];
+        let cart = [];
+
+        // --- ELEMENTS ---
+        const productGrid = document.getElementById('product-grid');
+        const searchInput = document.getElementById('search-input');
+        const filterButtons = document.querySelectorAll('.filter-btn');
+        const mainPage = document.getElementById('main-page');
+        const productDetailPage = document.getElementById('product-detail-page');
+
+        // --- RENDER FUNCTIONS ---
+        function renderProducts(filteredProducts) {
+            productGrid.innerHTML = '';
+            filteredProducts.forEach(product => {
+                const productCard = `
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden product-card transition duration-300 flex flex-col">
+                        <img src="${product.image}" alt="${product.name}" class="w-full h-64 object-cover cursor-pointer" onclick="showProductDetail(${product.id})">
+                        <div class="p-6 text-center flex-grow flex flex-col">
+                            <h3 class="font-bold text-xl mb-2 flex-grow">${product.name}</h3>
+                            <p class="text-gray-600 dark:text-gray-400 text-lg mb-4">${product.price} جنيه</p>
+                            <button onclick="addToCart(${product.id})" class="mt-auto bg-pink-500 text-white px-6 py-2 rounded-md hover:bg-pink-600 w-full">أضف للسلة</button>
+                        </div>
+                    </div>
+                `;
+                productGrid.innerHTML += productCard;
+            });
+        }
+
+        // --- PAGE NAVIGATION ---
+        function showProductDetail(productId) {
+            const product = products.find(p => p.id === productId);
+            productDetailPage.innerHTML = `
+                <div class="container mx-auto px-6 py-16">
+                    <button onclick="showMainPage()" class="mb-8 bg-gray-200 dark:bg-gray-700 px-4 py-2 rounded-md">&larr; العودة للمنتجات</button>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+                        <div><img src="${product.image.replace('text=', `text=${encodeURIComponent(product.name)}`)}" alt="${product.name}" class="w-full rounded-lg shadow-lg"></div>
+                        <div>
+                            <h1 class="text-4xl font-bold mb-4">${product.name}</h1>
+                            <p class="text-3xl text-pink-500 dark:text-pink-400 mb-6">${product.price} جنيه</p>
+                            <p class="text-gray-600 dark:text-gray-400 mb-6">وصف افتراضي للمنتج. مصنوع من أجود أنواع القطن لراحة طفلك.</p>
+                            <button onclick="addToCart(${product.id})" class="w-full bg-pink-500 text-white py-3 rounded-md text-lg hover:bg-pink-600">أضف للسلة</button>
+                            
+                            <!-- Customer Reviews -->
+                            <div class="mt-12">
+                                <h3 class="text-2xl font-bold mb-4">تقييمات العملاء</h3>
+                                <div class="border-t pt-4">
+                                    <p class="font-bold">سارة أحمد</p>
+                                    <p class="text-yellow-400">★★★★☆</p>
+                                    <p class="text-gray-600 dark:text-gray-400 mt-1">منتج رائع وجودة ممتازة!</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            mainPage.classList.add('hidden');
+            productDetailPage.classList.remove('hidden');
+            window.scrollTo(0, 0);
+        }
+
+        function showMainPage() {
+            productDetailPage.classList.add('hidden');
+            mainPage.classList.remove('hidden');
+        }
+
+
+        // --- FILTER & SEARCH ---
+        function filterAndSearch() {
+            const searchTerm = searchInput.value.toLowerCase();
+            const activeCategory = document.querySelector('.filter-btn.bg-pink-200').dataset.category;
+
+            let filtered = products;
+
+            if (activeCategory !== 'all') {
+                filtered = filtered.filter(p => p.category === activeCategory);
+            }
+
+            if (searchTerm) {
+                filtered = filtered.filter(p => p.name.toLowerCase().includes(searchTerm));
+            }
+
+            renderProducts(filtered);
+        }
+
+        searchInput.addEventListener('input', filterAndSearch);
+        filterButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                filterButtons.forEach(btn => {
+                    btn.classList.remove('bg-pink-200', 'dark:bg-pink-800');
+                    btn.classList.add('bg-gray-200', 'dark:bg-gray-700');
+                });
+                button.classList.add('bg-pink-200', 'dark:bg-pink-800');
+                button.classList.remove('bg-gray-200', 'dark:bg-gray-700');
+                filterAndSearch();
+            });
+        });
+
+        // --- CART LOGIC ---
+        const cartModal = document.getElementById('cart-modal');
+        const cartButton = document.getElementById('cart-button');
+        const closeCartButton = document.getElementById('close-cart-button');
+        const cartItemsContainer = document.getElementById('cart-items');
+        const cartTotalEl = document.getElementById('cart-total');
+        const cartCountEl = document.getElementById('cart-count');
+
+        function addToCart(productId) {
+            const product = products.find(p => p.id === productId);
+            const existingItem = cart.find(item => item.id === productId);
+            if (existingItem) {
+                existingItem.quantity++;
             } else {
-                navbar.classList.remove('nav-scrolled');
+                cart.push({ ...product, quantity: 1 });
+            }
+            updateCart();
+        }
+
+        function updateCart() {
+            cartItemsContainer.innerHTML = '';
+            let total = 0;
+            let count = 0;
+            if (cart.length === 0) {
+                cartItemsContainer.innerHTML = '<p>سلة التسوق فارغة.</p>';
+            } else {
+                cart.forEach(item => {
+                    total += item.price * item.quantity;
+                    count += item.quantity;
+                    cartItemsContainer.innerHTML += `
+                        <div class="flex justify-between items-center mb-2">
+                            <span>${item.name} (x${item.quantity})</span>
+                            <span>${item.price * item.quantity} جنيه</span>
+                        </div>
+                    `;
+                });
+            }
+            cartTotalEl.innerText = `${total} جنيه`;
+            cartCountEl.innerText = count;
+        }
+
+        cartButton.addEventListener('click', () => cartModal.classList.remove('hidden'));
+        closeCartButton.addEventListener('click', () => cartModal.classList.add('hidden'));
+        cartModal.addEventListener('click', (e) => {
+            if (e.target === cartModal) cartModal.classList.add('hidden');
+        });
+
+        // --- LOGIN MODAL ---
+        const loginModal = document.getElementById('login-modal');
+        const loginButton = document.getElementById('login-button');
+        const closeLoginButton = document.getElementById('close-login-button');
+        
+        loginButton.addEventListener('click', () => loginModal.classList.remove('hidden'));
+        closeLoginButton.addEventListener('click', () => loginModal.classList.add('hidden'));
+        loginModal.addEventListener('click', (e) => {
+            if (e.target === loginModal) loginModal.classList.add('hidden');
+        });
+        
+        // --- THEME TOGGLE ---
+        // (Copied from previous version)
+        const themeToggleDarkIcon = document.getElementById('theme-toggle-dark-icon');
+        const themeToggleLightIcon = document.getElementById('theme-toggle-light-icon');
+        const themeToggleButton = document.getElementById('theme-toggle');
+
+        if (localStorage.getItem('color-theme') === 'dark' || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            themeToggleLightIcon.classList.remove('hidden');
+        } else {
+            themeToggleDarkIcon.classList.remove('hidden');
+        }
+
+        themeToggleButton.addEventListener('click', function() {
+            themeToggleDarkIcon.classList.toggle('hidden');
+            themeToggleLightIcon.classList.toggle('hidden');
+            if (localStorage.getItem('color-theme')) {
+                if (localStorage.getItem('color-theme') === 'light') {
+                    document.documentElement.classList.add('dark');
+                    localStorage.setItem('color-theme', 'dark');
+                } else {
+                    document.documentElement.classList.remove('dark');
+                    localStorage.setItem('color-theme', 'light');
+                }
+            } else {
+                if (document.documentElement.classList.contains('dark')) {
+                    document.documentElement.classList.remove('dark');
+                    localStorage.setItem('color-theme', 'light');
+                } else {
+                    document.documentElement.classList.add('dark');
+                    localStorage.setItem('color-theme', 'dark');
+                }
             }
         });
-
-        // Mobile menu toggle
-        const mobileMenuButton = document.getElementById('mobile-menu-button');
+        
+        // --- MOBILE MENU ---
+        const menuBtn = document.getElementById('menu-btn');
         const mobileMenu = document.getElementById('mobile-menu');
-        mobileMenuButton.addEventListener('click', () => {
-            mobileMenu.classList.toggle('hidden');
+        menuBtn.addEventListener('click', () => mobileMenu.classList.toggle('hidden'));
+        
+        // --- INITIAL RENDER ---
+        document.addEventListener('DOMContentLoaded', () => {
+            renderProducts(products);
+            updateCart();
         });
     </script>
-
 </body>
 </html>
