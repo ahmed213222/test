@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Family Store - متجر العائلة لملابس الأطفال</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 576 512' fill='%23ec4899'%3E%3Cpath d='M528.12 240.29c-14.15-14.15-37.11-14.15-51.26 0L296.3 420.85c-2.36 2.36-5.48 3.54-8.59 3.54s-6.23-1.18-8.59-3.54L101.14 240.29c-14.15-14.15-37.11-14.15-51.26 0-14.15 14.15-14.15 37.11 0 51.26L226.44 472.1c33.96 33.96 89.02 33.96 122.98 0l178.56-178.56c14.29-14.14 14.29-37.1 0-51.25zM128 96c0-17.67-14.33-32-32-32s-32 14.33-32 32 14.33 32 32 32 32-14.33 32-32zm320 0c0-17.67-14.33-32-32-32s-32 14.33-32 32 14.33 32 32 32 32-14.33 32-32z'/%3E%3C/svg%3E">
     
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -63,7 +64,10 @@
     <!-- Header Section -->
     <header class="bg-white dark:bg-gray-800 shadow-md sticky top-0 z-50">
         <nav class="container mx-auto px-4 sm:px-6 py-3 flex justify-between items-center">
-            <a href="#" class="text-3xl font-bold text-pink-500 dark:text-pink-400" onclick="showMainPage()">Family Store</a>
+            <a href="#" class="text-3xl font-bold text-pink-500 dark:text-pink-400 flex items-center gap-3" onclick="showMainPage()">
+                <i class="fas fa-baby-carriage"></i>
+                <span>Family Store</span>
+            </a>
             
             <div class="hidden md:flex items-center space-x-6 space-x-reverse">
                 <a href="#home" class="nav-link">الرئيسية</a>
@@ -469,7 +473,7 @@
             });
             message += `\n*الإجمالي: ${total} جنيه*`;
             
-            const whatsappNumber = "201234567890";
+            const whatsappNumber = "201556002721";
             const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
             window.open(whatsappUrl, '_blank');
         }
@@ -734,4 +738,4 @@
         });
     </script>
 </body>
-</html>
+</ht
